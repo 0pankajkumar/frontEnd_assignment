@@ -1,0 +1,4 @@
++ plotly.js@1.47.1
+added 431 packages from 232 contributors and audited 68751 packages in 394.824s
+found 115 vulnerabilities (104 low, 9 moderate, 2 high)
+  run `npm audit fix` to fix them, or `npm audit` for details

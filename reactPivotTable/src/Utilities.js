@@ -12,7 +12,7 @@ import PropTypes from 'prop-types';
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 
-const addSeparators = function(nStr, thousandsSep, decimalSep) {
+const addSeparators = function (nStr, thousandsSep, decimalSep) {
   const x = String(nStr).split('.');
   let x1 = x[0];
   const x2 = x.length > 1 ? decimalSep + x[1] : '';
@@ -23,7 +23,7 @@ const addSeparators = function(nStr, thousandsSep, decimalSep) {
   return x1 + x2;
 };
 
-const numberFormat = function(opts_in) {
+const numberFormat = function (opts_in) {
   const defaults = {
     digitsAfterDecimal: 2,
     scaler: 1,
@@ -33,7 +33,7 @@ const numberFormat = function(opts_in) {
     suffix: '',
   };
   const opts = Object.assign({}, defaults, opts_in);
-  return function(x) {
+  return function (x) {
     if (isNaN(x) || !isFinite(x)) {
       return '';
     }
@@ -121,7 +121,7 @@ const naturalSort = (as, bs) => {
   return a.length - b.length;
 };
 
-const sortAs = function(order) {
+const sortAs = function (order) {
   const mapping = {};
 
   // sort lowercased keys similarly
@@ -133,7 +133,7 @@ const sortAs = function(order) {
       l_mapping[x.toLowerCase()] = i;
     }
   }
-  return function(a, b) {
+  return function (a, b) {
     if (a in mapping && b in mapping) {
       return mapping[a] - mapping[b];
     } else if (a in mapping) {
@@ -151,7 +151,7 @@ const sortAs = function(order) {
   };
 };
 
-const getSort = function(sorters, attr) {
+const getSort = function (sorters, attr) {
   if (sorters) {
     if (typeof sorters === 'function') {
       const sort = sorters(attr);
@@ -167,7 +167,7 @@ const getSort = function(sorters, attr) {
 
 // aggregator templates default to US number formatting but this is overrideable
 const usFmt = numberFormat();
-const usFmtInt = numberFormat({digitsAfterDecimal: 0});
+const usFmtInt = numberFormat({ digitsAfterDecimal: 0 });
 const usFmtPct = numberFormat({
   digitsAfterDecimal: 1,
   scaler: 100,
@@ -177,7 +177,7 @@ const usFmtPct = numberFormat({
 const aggregatorTemplates = {
   count(formatter = usFmtInt) {
     return () =>
-      function() {
+      function () {
         return {
           count: 0,
           push() {
@@ -192,8 +192,8 @@ const aggregatorTemplates = {
   },
 
   uniques(fn, formatter = usFmtInt) {
-    return function([attr]) {
-      return function() {
+    return function ([attr]) {
+      return function () {
         return {
           uniq: [],
           push(record) {
@@ -212,13 +212,13 @@ const aggregatorTemplates = {
   },
 
   sum(formatter = usFmt) {
-    return function([attr]) {
-      return function() {
+    return function ([attr]) {
+      return function () {
         return {
           sum: 0,
           push(record) {
             if (!isNaN(parseFloat(record[attr]))) {
-              this.sum += parseFloat(record[attr]+10000);
+              this.sum += parseFloat(record[attr]);
             }
           },
           value() {
@@ -232,8 +232,8 @@ const aggregatorTemplates = {
   },
 
   extremes(mode, formatter = usFmt) {
-    return function([attr]) {
-      return function(data) {
+    return function ([attr]) {
+      return function (data) {
         return {
           val: null,
           sorter: getSort(
@@ -277,8 +277,8 @@ const aggregatorTemplates = {
   },
 
   quantile(q, formatter = usFmt) {
-    return function([attr]) {
-      return function() {
+    return function ([attr]) {
+      return function () {
         return {
           vals: [],
           push(record) {
@@ -303,8 +303,8 @@ const aggregatorTemplates = {
   },
 
   runningStat(mode = 'mean', ddof = 1, formatter = usFmt) {
-    return function([attr]) {
-      return function() {
+    return function ([attr]) {
+      return function () {
         return {
           n: 0.0,
           m: 0.0,
@@ -348,9 +348,34 @@ const aggregatorTemplates = {
     };
   },
 
+  totalNumericSum(formatter = usFmt) {
+    return function ([num, denom]) {
+      return function () {
+        return {
+          sumNum: 0,
+          sumDenom: 0,
+          push(record) {
+            if (!isNaN(parseFloat(record[num]))) {
+              this.sumNum += parseFloat(record[num]);
+            }
+            if (!isNaN(parseFloat(record[denom]))) {
+              this.sumDenom += parseFloat(record[denom]);
+            }
+          },
+          value() {
+            return this.sumNum / this.sumDenom;
+          },
+          format: formatter,
+          numInputs:
+            typeof num !== 'undefined' && typeof denom !== 'undefined' ? 0 : 2,
+        };
+      };
+    };
+  },
+
   sumOverSum(formatter = usFmt) {
-    return function([num, denom]) {
-      return function() {
+    return function ([num, denom]) {
+      return function () {
         return {
           sumNum: 0,
           sumDenom: 0,
@@ -375,9 +400,9 @@ const aggregatorTemplates = {
 
   fractionOf(wrapped, type = 'total', formatter = usFmtPct) {
     return (...x) =>
-      function(data, rowKey, colKey) {
+      function (data, rowKey, colKey) {
         return {
-          selector: {total: [[], []], row: [rowKey, []], col: [[], colKey]}[
+          selector: { total: [[], []], row: [rowKey, []], col: [[], colKey] }[
             type
           ],
           inner: wrapped(...Array.from(x || []))(data, rowKey, colKey),
@@ -415,8 +440,54 @@ aggregatorTemplates.var = (ddof, f) =>
 aggregatorTemplates.stdev = (ddof, f) =>
   aggregatorTemplates.runningStat('stdev', ddof, f);
 
+
+aggregatorTemplates.customSum = (formatter = usFmt) => {
+  return (attrs = [...attr]) =>
+    function () {
+      return {
+        sum: 0,
+        push(record) {
+          attrs.forEach(element => {
+            if (!isNaN(parseFloat(record[element]))) {
+              this.sum += parseFloat(record[element]);
+            }
+          });
+        },
+        value() {
+          return this.sum;
+        },
+        format: formatter,
+      };
+    };
+}
+
+aggregatorTemplates.customAverage = (formatter = usFmt) => {
+  return (attrs = [...attr]) =>
+    function () {
+      return {
+        sum: 0,
+        count: 0,
+        push(record) {
+          attrs.forEach(element => {
+            if (!isNaN(parseFloat(record[element]))) {
+              this.sum += parseFloat(record[element]);
+              this.count++;
+            }
+          });
+        },
+        value() {
+          return this.sum / this.count;
+        },
+        format: formatter,
+      };
+    };
+}
+
+
 // default aggregators & renderers use US naming and number formatting
 const aggregators = (tpl => ({
+  "Custom Sum": tpl.customSum(usFmt),
+  "Custom Average": tpl.customAverage(usFmt),
   Count: tpl.count(usFmtInt),
   'Count Unique Values': tpl.countUnique(usFmtInt),
   'List Unique Values': tpl.listUnique(', '),
@@ -489,12 +560,12 @@ const derivers = {
     dayNames = dayNamesEn
   ) {
     const utc = utcOutput ? 'UTC' : '';
-    return function(record) {
+    return function (record) {
       const date = new Date(Date.parse(record[col]));
       if (isNaN(date)) {
         return '';
       }
-      return formatString.replace(/%(.)/g, function(m, p) {
+      return formatString.replace(/%(.)/g, function (m, p) {
         switch (p) {
           case 'y':
             return date[`get${utc}FullYear`]();
@@ -544,6 +615,7 @@ class PivotData {
     this.colKeys = [];
     this.rowTotals = {};
     this.colTotals = {};
+    this.colCountTotals = {};
     this.allTotal = this.aggregator(this, [], []);
     this.sorted = false;
 
@@ -596,7 +668,7 @@ class PivotData {
       }
       return result;
     })();
-    return function(a, b) {
+    return function (a, b) {
       for (const i of Object.keys(sortersArr || {})) {
         const sorter = sortersArr[i];
         const comparison = sorter(a[i], b[i]);
@@ -674,6 +746,16 @@ class PivotData {
         this.colTotals[flatColKey] = this.aggregator(this, [], colKey);
       }
       this.colTotals[flatColKey].push(record);
+
+
+      let getCountAggregator = this.props.aggregators["Count"](
+        this.props.vals
+      );
+
+      if (!this.colCountTotals[flatColKey]) {
+        this.colCountTotals[flatColKey] = getCountAggregator(this, [], colKey);
+      }
+      this.colCountTotals[flatColKey].push(record);
     }
 
     if (colKey.length !== 0 && rowKey.length !== 0) {
@@ -715,15 +797,43 @@ class PivotData {
       }
     );
   }
+
+
+  getCountAggregator(colKey) {
+    let agg;
+    const flatColKey = colKey.join(String.fromCharCode(0));
+    if (colKey.length === 0) {
+      agg = {
+        value() {
+          return null;
+        },
+        format() {
+          return '';
+        },
+      };
+    } else {
+      agg = this.colCountTotals[flatColKey];
+    }
+    return (
+      agg || {
+        value() {
+          return null;
+        },
+        format() {
+          return '';
+        },
+      }
+    );
+  }
 }
 
 // can handle arrays or jQuery selections of tables
-PivotData.forEachRecord = function(input, derivedAttributes, f) {
+PivotData.forEachRecord = function (input, derivedAttributes, f) {
   let addRecord, record;
   if (Object.getOwnPropertyNames(derivedAttributes).length === 0) {
     addRecord = f;
   } else {
-    addRecord = function(record) {
+    addRecord = function (record) {
       for (const k in derivedAttributes) {
         const derived = derivedAttributes[k](record);
         if (derived !== null) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import tips from './tips';
-import {sortAs} from '../src/Utilities';
+import { sortAs } from '../src/Utilities';
 import TableRenderers from '../src/TableRenderers';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import createPlotlyRenderers from '../src/PlotlyRenderers';
@@ -14,11 +14,11 @@ const Plot = createPlotlyComponent(window.Plotly);
 class PivotTableUISmartWrapper extends React.PureComponent {
     constructor(props) {
         super(props);
-        this.state = {pivotState: props};
+        this.state = { pivotState: props };
     }
 
     componentWillReceiveProps(nextProps) {
-        this.setState({pivotState: nextProps});
+        this.setState({ pivotState: nextProps });
     }
 
     render() {
@@ -30,7 +30,11 @@ class PivotTableUISmartWrapper extends React.PureComponent {
                     createPlotlyRenderers(Plot)
                 )}
                 {...this.state.pivotState}
-                onChange={s => this.setState({pivotState: s})}
+                onChange={s => {
+                    //   console.log(s);
+                    s.vals = s.rows;
+                    this.setState({ pivotState: s });
+                }}
                 unusedOrientationCutoff={Infinity}
             />
         );
@@ -39,25 +43,33 @@ class PivotTableUISmartWrapper extends React.PureComponent {
 
 export default class App extends React.Component {
     componentWillMount() {
+        let data = [['Row labels', 'Lang', 'Hours']];
+        tips.forEach((item) => {
+            data.push([item["Row Labels"], 'English', item['Sum of English']]);
+            data.push([item["Row Labels"], 'Math', item['Sum of Maths']]);
+            data.push([item["Row Labels"], 'Hindi', item['Sum of Hindi']]);
+        });
+
         this.setState({
             mode: 'demo',
             filename: 'Sample Dataset: Tips',
             pivotState: {
                 data: tips,
-                rows: ['Row Labels','Sum of English'],
+                rows: ['Row Labels', 'Sum of Maths', 'Sum of English', 'Sum of Hindi'],
                 cols: [],
-                aggregatorName: 'Sum',
-                vals: ['Tip', 'Total Bill'],
+                aggregatorName: 'Custom Sum',
+                vals: ['Sum of Maths', 'Sum of English', 'Sum of Hindi'],
                 rendererName: 'Table',
                 sorters: {
-                    
+
                 },
-                plotlyOptions: {width: 900, height: 500},
+                plotlyOptions: { width: 900, height: 500 },
                 plotlyConfig: {},
+                showCount: false,
                 tableOptions: {
-                    clickCallback: function(e, value, filters, pivotData) {
+                    clickCallback: function (e, value, filters, pivotData) {
                         var names = [];
-                        pivotData.forEachMatchingRecord(filters, function(
+                        pivotData.forEachMatchingRecord(filters, function (
                             record
                         ) {
                             names.push(record.Meal);
@@ -69,12 +81,12 @@ export default class App extends React.Component {
         });
     }
 
-    
+
     render() {
         return (
             <div>
                 <div className="row text-center">
-                    
+
                     <PivotTableUISmartWrapper {...this.state.pivotState} />
                 </div>
             </div>
