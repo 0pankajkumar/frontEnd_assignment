@@ -5,4 +5,5 @@ Libraries used:
 * react-pivotable
     * D3.js
     * Plotly.js
+    
 A complete list of interdependecies is available in package.json
