@@ -1,6 +1,7 @@
 Made as an assignment for to replicate pivot table feature of spreadsheets in webpage using HTML, CSS and Javascript
 Libraries used:
 * Bootstrap
+* reactJS
 * react-pivotable
     * D3.js
     * Plotly.js
